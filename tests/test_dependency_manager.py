@@ -24,6 +24,9 @@ from kapitan.dependency_manager.base import fetch_git_source, fetch_http_source,
 
 
 class DependencyManagerTest(unittest.TestCase):
+    def setUp(self):
+        os.chdir(os.path.join(os.getcwd(), "tests", "test_resources"))
+
     def test_fetch_http_sources(self):
         temp_dir = tempfile.mkdtemp()
         http_sources = [
@@ -59,15 +62,39 @@ class DependencyManagerTest(unittest.TestCase):
         self.assertTrue(os.path.isdir(os.path.join(output_dir, "subdir")))
 
     def test_compile_fetch(self):
-        cwd = os.getcwd()
-        os.chdir(os.path.join(cwd, "tests", "test_resources"))
         temp = tempfile.mkdtemp()
         DEPENDENCY_OUTPUT_CONFIG["root_dir"] = temp
         sys.argv = ["kapitan", "compile", "--output-path", temp, "-t", "nginx", "nginx-dev", "--fetch", "-p", "4"]
         main()
-        reset_cache()
-        os.chdir(cwd)
         self.assertTrue(os.path.isdir(os.path.join(temp, "components", "tests")))
         self.assertTrue(os.path.isdir(os.path.join(temp, "components", "acs-engine-autoscaler-0.1.0")))
         self.assertTrue(os.path.isdir(os.path.join(temp, "components", "kapitan-repository")))
         self.assertTrue(os.path.isdir(os.path.join(temp, "components", "source")))
+
+    def test_compile_force_fetch(self):
+        temp = tempfile.mkdtemp()
+        DEPENDENCY_OUTPUT_CONFIG["root_dir"] = temp
+        sys.argv = ["kapitan", "compile", "--fetch", "--output-path", temp, "-t", "nginx-dev", "--fetch", "-p", "4"]
+        main()
+
+        value_file_path = os.path.join(temp, "components", "nginx-values.yaml")
+        char_yaml_path = os.path.join(temp, "components", "acs-engine-autoscaler-0.1.0", "acs-engine-autoscaler", "values.yaml")
+        source_version_path = os.path.join(temp, "components", "source", "version.py")
+        from stat import ST_CTIME
+        time_created_before_chart_dir = os.stat(char_yaml_path)[ST_CTIME]
+        time_created_before_value_file = os.stat(value_file_path)[ST_CTIME]
+        time_created_before_source_dir = os.stat(source_version_path)[ST_CTIME]
+
+        # run main again, with --fetch
+        main()
+        time_created_after_value_file = os.stat(value_file_path)[ST_CTIME]
+        time_created_after_chart_dir = os.stat(char_yaml_path)[ST_CTIME]
+        time_created_after_source_dir = os.stat(source_version_path)[ST_CTIME]
+
+        self.assertTrue(time_created_after_value_file > time_created_before_value_file)
+        self.assertTrue(time_created_after_chart_dir > time_created_before_chart_dir)
+        self.assertTrue(time_created_after_source_dir > time_created_before_source_dir)
+
+    def tearDown(self):
+        os.chdir(os.getcwd() + '/../../')
+        reset_cache()

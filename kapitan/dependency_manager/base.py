@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 DEPENDENCY_OUTPUT_CONFIG = {}
 
 
-def fetch_dependencies(target_objs, pool):
+def fetch_dependencies(target_objs, pool, force_fetch):
     """
     parses through the dependencies parameters in target_objs and fetches them
     all dependencies are first fetched into tmp dir, after which they are copied to their respective output_path.
@@ -41,7 +41,7 @@ def fetch_dependencies(target_objs, pool):
                     # should only be used in test environment
                     item["output_path"] = os.path.join(DEPENDENCY_OUTPUT_CONFIG["root_dir"], item["output_path"])
                 output_path = item["output_path"]
-                if os.path.exists(os.path.abspath(output_path)):
+                if os.path.exists(os.path.abspath(output_path)) and not force_fetch:
                     logger.info("Dependency {} : already exists. Ignoring".format(output_path))
                     continue
 
@@ -67,6 +67,9 @@ def fetch_git_dependency(dep_mapping, save_dir):
     """
     source, deps = dep_mapping
     fetch_git_source(source, save_dir)
+
+    # duplicated output_path may exist if this dependency is duplicated by inheritance or otherwise
+    saved_output_paths = set()
     for dep in deps:
         repo_path = os.path.join(save_dir, os.path.basename(source))
         repo = Repo(repo_path)
@@ -87,11 +90,10 @@ def fetch_git_dependency(dep_mapping, save_dir):
             else:
                 raise GitSubdirNotFoundError("Dependency {} : subdir {} not found in repo".format(source, sub_dir))
 
-        if not os.path.exists(os.path.abspath(output_path)):
-            # output_path could exist if this dependency is duplicated by inheritance or otherwise.
-            # in such cases, simply skip the copy process
+        if output_path not in saved_output_paths:
             copy_tree(copy_src_path, output_path)
             logger.info("Dependency {} : saved to {}".format(source, output_path))
+            saved_output_paths.add(output_path)
 
 
 def fetch_git_source(source, save_dir):
@@ -107,14 +109,14 @@ def fetch_http_dependency(dep_mapping, save_dir):
     the output_path stored in dep_mapping
     """
     source, deps = dep_mapping
+    # duplicated output_path may exist if this dependency is duplicated by inheritance or otherwise
+    saved_output_paths = set()
     content_type = fetch_http_source(source, save_dir)
     path_hash = hashlib.sha256(os.path.dirname(source).encode()).hexdigest()[:8]
     copy_src_path = os.path.join(save_dir, path_hash + os.path.basename(source))
     for dep in deps:
         output_path = dep["output_path"]
-        if not os.path.exists(output_path):
-            # output_path could exist if this dependency is duplicated by inheritance.
-            # in such cases, simply skip the copy
+        if output_path not in saved_output_paths:
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
             if dep.get('unpack', False):
                 if content_type == 'application/x-tar':
@@ -130,6 +132,7 @@ def fetch_http_dependency(dep_mapping, save_dir):
             else:
                 copyfile(copy_src_path, output_path)
             logger.info("Dependency {} : saved to {}".format(source, output_path))
+        saved_output_paths.add(output_path)
 
 
 def fetch_http_source(source, save_dir):
