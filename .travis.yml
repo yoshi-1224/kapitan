@@ -9,7 +9,9 @@ jobs:
     before_install: skip
     script:  # no tests
       - go version
+      - python3 --version
       - make build_helm_binding
+      - make test
     after_success: true  # overwrite after_success and do nothing
     after_deploy: skip
 
