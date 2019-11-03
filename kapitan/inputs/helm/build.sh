@@ -6,7 +6,7 @@ pwd
 # append platform name to the .so file name, corresponding to python's platform.system()
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
     os_suffix="Linux"
-elif [[ "$OSTYPE" == "darwin" ]]; then
+elif [[ "$OSTYPE" == "darwin"* ]]; then
     os_suffix="Darwin"
 fi
 

@@ -1,5 +1,6 @@
 language: python
 cache: pip
+
 jobs:
   include:
   - stage: osx-deploy
@@ -10,8 +11,9 @@ jobs:
     script:  # no tests
       - go version
       - python3 --version
+      - echo $OSTYPE
       - make build_helm_binding
-      - make test
+      - python3 -m unittest tests.test_helm_input
     after_success: true  # overwrite after_success and do nothing
     after_deploy: skip
 
