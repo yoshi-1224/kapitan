@@ -3,7 +3,6 @@ cache: pip
 jobs:
   include:
   - stage: osx-deploy
-    if: tag IS present
     language: shell
     osx_image: xcode11.2 # Python 3.7.4 running on macOS 10.14.4
     os: osx
