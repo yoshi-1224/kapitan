@@ -16,7 +16,7 @@ so_name="libtemplate_$os_suffix.so"
 if [[ -z $(which go) ]]; then
     echo "[WARN] go is not available on this system -- skipping Helm binding build!"
 else
-    go build -buildmode=c-shared -o $so_name template.go
+    go build -buildmode=c-shared -v -o $so_name template.go
 fi
 
 # Validate that the compiled binding exists
