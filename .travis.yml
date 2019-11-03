@@ -17,6 +17,7 @@ jobs:
       - python3 -m unittest tests.test_helm_input.HelmInputTest.test_compile_subcharts
       - python3 -m unittest tests.test_helm_input.HelmInputTest.test_compile_with_helm_params
       - python3 -m unittest tests.test_helm_input.HelmInputTest.test_compile_with_helm_values
+      - python3 -m unittest tests.test_helm_input.HelmInputTest.test_compile_multiple_charts_per_target
       - python3 -m unittest tests.test_helm_input
     after_success: true  # overwrite after_success and do nothing
     after_deploy: skip
