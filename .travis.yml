@@ -8,6 +8,7 @@ jobs:
     os: osx
     before_install: skip
     script:  # no tests
+      - go version
       - make build_helm_binding
     after_success: true  # overwrite after_success and do nothing
     after_deploy: skip
